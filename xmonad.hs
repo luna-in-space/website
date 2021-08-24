@@ -1,17 +1,24 @@
 -- IMPORTS
 
 import XMonad
+import XMonad.Hooks.EwmhDesktops
+import XMonad.Hooks.ManageDocks
 import Data.Monoid
 import System.Exit
 import XMonad.Util.Run
 import XMonad.Util.SpawnOnce
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
+import XMonad.Hooks.DynamicLog
+--xfce terminal, eit for another terminal
+myTerminal      = "kitty"
 
-
---xfce terminal, edit for another terminal
-myTerminal      = "xfce4-terminal"
-
+--colours
+gray      = "#7F7F7"
+gray2     = "#22222"
+red       = "900000" 
+blue      = "2E9AFE"
+mauve     = "E0B0FF"  
 -- dont mke focus follow mouse
 myFocusFollowsMouse :: Bool
 myFocusFollowsMouse = False
@@ -76,6 +83,13 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- launch dmenu
     , ((modm,               xK_p     ), spawn "exe=`dmenu_path | dmenu` && eval \"exec $exe\"")
+
+
+    --launch discord
+    , ((modm,               xK_d     ), spawn "discord")
+
+    --launch firefox
+    , (( modm,              xK_f     ), spawn "firefox")
 
     -- launch gmrun
     , ((modm .|. shiftMask, xK_p     ), spawn "gmrun")
@@ -198,7 +212,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = tiled ||| Mirror tiled ||| Full
+myLayout = avoidStruts (tiled ||| Mirror tiled ||| Full)
   where
     -- default tiling algorithm partitions the screen into two panes
     tiled   = Tall nmaster delta ratio
@@ -277,7 +291,7 @@ myLogHook = return ()
 --
 myStartupHook = do
   spawnOnce "nitrogen --restore&"
-  spawnOnce "compton"
+  spawnOnce "picom"
 
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
@@ -285,10 +299,26 @@ myStartupHook = do
 -- Run xmonad with the settings you specify. No need to modify this.
 --
 main = do
-  xmproc <- spawnPipe "/usr/bin/xmobar -x 0 /home/aether/.config/xmobar/xmobarrc/"
-  xmonad defaults
+  xmproc <- spawnPipe "xmobar -x 0 /home/aether/.config/xmobar/xmobarrc"
+  xmproc <- spawnPipe "xmobar -x 1 /home/aether/.config/xmobar/xmobarrc"
+  xmonad $ ewmh $ docks $ defaults {
+     logHook = dynamicLogWithPP $ xmobarPP {
+         
+         ppOutput= hPutStrLn xmproc
+        ,ppVisible = xmobarColor "#7F7F7F" ""
+        ,ppTitle = xmobarColor "#222222" ""
+        ,ppCurrent = xmobarColor "#2E9AFE" ""
+        ,ppHidden = xmobarColor "#7F7F7F" ""
+        ,ppLayout = xmobarColor "#7F7F7F" ""
+        ,ppUrgent = xmobarColor "#900000" ""
+    }
+    , manageHook = manageDocks <+> myManageHook
+    , startupHook = myStartupHook
+  }
 
--- A structure containing your configuration settings, overriding
+
+--overide PP values as you would otherwise, adding colors etc depening
+--on the statusbar uses
 -- fields in the default config. Any you don't override, will
 -- use the defaults defined in xmonad/XMonad/Config.hs
 --
